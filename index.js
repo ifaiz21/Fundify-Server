@@ -15,6 +15,7 @@ const contactusRoutes = require('./routes/contactus');
 const donationsRoutes = require('./routes/donations');
 const campaignUpdatesRoutes = require('./routes/campaignUpdates');
 const newsletterRoutes = require('./routes/newsletter'); // Import newsletter routes
+const mongoURI = process.env.MONGO_URI; // <--- This must match EXACTLY!
 
 dns.setDefaultResultOrder('ipv4first');
 
