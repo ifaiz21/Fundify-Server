@@ -27,7 +27,7 @@ app.get("/",(req,res)=>{
   })
 
 // Middleware
-app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+app.use(cors({ origin: 'https://fundify.up.railway.app', credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
