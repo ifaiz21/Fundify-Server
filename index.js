@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dns = require('dns');
 const path = require('path');
+const fs = require('fs'); // Import file system module to create upload directory
 
 // Import routes
 const adminRoutes = require('./routes/admin');
@@ -15,6 +16,7 @@ const contactusRoutes = require('./routes/contactus');
 const donationsRoutes = require('./routes/donations');
 const campaignUpdatesRoutes = require('./routes/campaignUpdates');
 const newsletterRoutes = require('./routes/newsletter'); // Import newsletter routes
+const kycRoutes = require('./routes/kycRoutes'); // Import KYC routes
 const mongoURI = process.env.MONGO_URI; // <--- This must match EXACTLY!
 
 dns.setDefaultResultOrder('ipv4first');
@@ -30,6 +32,14 @@ app.get("/",(req,res)=>{
 app.use(cors({ origin: 'https://fundify.up.railway.app', credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// --- STATIC FILE SERVING FOR UPLOADS ---
+// Ensure the 'public/uploads' directory exists and is served statically
+const publicUploadsDir = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(publicUploadsDir)) {
+    fs.mkdirSync(publicUploadsDir, { recursive: true });
+}
+app.use('/uploads', express.static(publicUploadsDir)); // Serve files from public/uploads
 
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
@@ -53,8 +63,9 @@ app.use('/api/campaigns', campaignRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/contactus', contactusRoutes);
 app.use('/api/donations', donationsRoutes);
-app.use('/api/campaigns', campaignUpdatesRoutes);
+app.use('/api/campaigns-updates', campaignUpdatesRoutes);
 app.use('/api/newsletter', newsletterRoutes);
+app.use('/api/kyc', kycRoutes);
 
 // Catch-all for undefined routes
 app.use((req, res, next) => {
