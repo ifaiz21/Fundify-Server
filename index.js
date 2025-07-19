@@ -28,29 +28,10 @@ app.get("/",(req,res)=>{
   res.status(200).json({message:"working"})
   })
 
-const allowedOrigins = [
-  'https://fundify-blond.vercel.app', // Your old URL
-  'https://fundify-5487b2gt4-mohammadfaiz1971-gmailcoms-projects.vercel.app', // Add this new URL
-  'http://localhost:3000' 
-];
- 
-const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
-  credentials: true, // Allow cookies and authorization headers
-};
-app.use(cors(corsOptions)); // Use the new, more secure options
+// Middleware
+app.use(cors({ origin: 'https://fundify.up.railway.app', credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-// Middleware
 
 // --- STATIC FILE SERVING FOR UPLOADS ---
 // Ensure the 'public/uploads' directory exists and is served statically
