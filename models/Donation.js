@@ -10,10 +10,10 @@ const donationSchema = new mongoose.Schema({
   campaignId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Campaign',
+    required: true
     // This could be optional if general donations are allowed
     // But given the context of campaigns, it's likely always linked.
     // If a donation is not specific to a campaign, this can be null.
-    default: null, 
   },
   amount: {
     type: Number,
@@ -26,6 +26,7 @@ const donationSchema = new mongoose.Schema({
   },
   frequency: {
     type: String,
+    required: true,
     enum: ['one-time', 'monthly'],
     default: 'one-time',
   },
@@ -35,11 +36,13 @@ const donationSchema = new mongoose.Schema({
   },
   donationType: { // To match the select dropdown in frontend
     type: String,
+    required: true,
     enum: ['General donation', 'Project specific', 'Emergency relief', 'Education Purpose', 'Flood relief', 'Others'],
-    default: 'General donation',
+    default: '',
   },
   status: {
     type: String,
+    required: true,
     enum: ['pending', 'completed', 'failed', 'refunded'],
     default: 'pending',
   },
