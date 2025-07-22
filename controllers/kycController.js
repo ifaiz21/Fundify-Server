@@ -1,6 +1,7 @@
 // server/controllers/kycController.js
 const KYCApplication = require('../models/KYCApplication');
 const User = require('../models/User'); // Assuming you have a User model
+const Notification = require('../models/Notification');
 
 // Helper function to send errors
 const sendErrorResponse = (res, statusCode, message, errorDetails) => {
@@ -66,6 +67,14 @@ const approveKYCApplication = async (req, res) => {
         // UPDATED: Update the user's KYC status in the User model to verified and set kycStatus to 'Approved'
         await User.findByIdAndUpdate(userId, { kycVerified: true, kycSubmitted: true, kycStatus: 'Approved' });
 
+        // --- NOTIFICATION LOGIC START ---
+        await new Notification({
+            userId: userId,
+            message: "Congratulations! Your KYC application has been approved.",
+            link: '/user-profile'
+        }).save();
+        // --- NOTIFICATION LOGIC END ---
+
         res.status(200).json({ message: 'KYC application approved successfully.', kycApplication });
     } catch (error) {
         sendErrorResponse(res, 500, 'Failed to approve KYC application.', error);
@@ -101,6 +110,14 @@ const rejectKYCApplication = async (req, res) => {
 
         // UPDATED: Update the user's KYC status to submitted:true, verified:false, and set kycStatus to 'Rejected' on rejection
         await User.findByIdAndUpdate(userId, { kycVerified: false, kycSubmitted: true, kycStatus: 'Rejected' });
+
+        // --- NOTIFICATION LOGIC START ---
+        await new Notification({
+            userId: userId,
+            message: `Your KYC application was rejected. Reason: ${adminComments.trim()}`,
+            link: '/user-profile'
+        }).save();
+        // --- NOTIFICATION LOGIC END ---
 
         res.status(200).json({ message: 'KYC application rejected successfully.', kycApplication });
     } catch (error) {
@@ -183,7 +200,15 @@ const submitKYCApplication = async (req, res) => {
 
         // UPDATED: Also update kycStatus in User model when KYC is submitted
         await User.findByIdAndUpdate(userId, { kycSubmitted: true, kycVerified: false, kycStatus: 'Pending Review' });
-
+        
+        // --- NOTIFICATION LOGIC START ---
+        await new Notification({
+            userId: userId,
+            message: "Your KYC application has been submitted and is now under review.",
+            link: '/user-profile'
+        }).save();
+        // --- NOTIFICATION LOGIC END ---
+        
         res.status(201).json({ message: 'KYC application initial data submitted successfully. Proceed to document upload.', kycApplication });
 
     } catch (error) {
