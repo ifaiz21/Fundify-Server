@@ -67,7 +67,7 @@ app.use('/api/donations', donationsRoutes);
 app.use('/api/campaigns-updates', campaignUpdatesRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/kyc', kycRoutes);
-app.use("/api/v1", paymentRoute);
+app.use("/api/payment", paymentRoute);
 
 // Catch-all for undefined routes
 app.use((req, res, next) => {

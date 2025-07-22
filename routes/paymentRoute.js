@@ -8,6 +8,6 @@ const authMiddleware = require('../middleware/auth');
 
 // 2. Call authMiddleware() to generate the middleware for the route.
 //    This middleware will check for a valid token for any logged-in user.
-router.route('/payment/process').post(authMiddleware(), processPayment);
+router.route('/process').post(authMiddleware(), processPayment);
 
 module.exports = router;
