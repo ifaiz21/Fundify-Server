@@ -1,67 +1,52 @@
-// server/models/Donation.js
 const mongoose = require('mongoose');
 
 const donationSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-  },
-  campaignId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Campaign',
-    required: true
-    // This could be optional if general donations are allowed
-    // But given the context of campaigns, it's likely always linked.
-    // If a donation is not specific to a campaign, this can be null.
-  },
-  amount: {
-    type: Number,
-    required: [true, 'Donation amount is required'],
-    min: [1, 'Donation amount must be at least 1'],
-  },
-  currency: {
-    type: String,
-    default: 'PKR', // Based on the frontend's PKR
-  },
-  frequency: {
-    type: String,
-    required: true,
-    enum: ['one-time', 'monthly'],
-    default: 'one-time',
-  },
-  honorOf: {
-    type: String,
-    default: '',
-  },
-  donationType: { // To match the select dropdown in frontend
-    type: String,
-    required: true,
-    enum: ['General donation', 'Project specific', 'Emergency relief', 'Education Purpose', 'Flood relief', 'Others'],
-    default: '',
-  },
-  status: {
-    type: String,
-    required: true,
-    enum: ['pending', 'completed', 'failed', 'refunded'],
-    default: 'pending',
-  },
-  transactionId: { // To store payment gateway transaction ID
-    type: String,
-    unique: true,
-    sparse: true, // Allows null values but enforces uniqueness for non-null
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now,
-  },
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    campaignId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Campaign',
+        required: true
+    },
+    amount: {
+        type: Number,
+        required: true
+    },
+    status: {
+        type: String,
+        required: true,
+        enum: ['pending', 'completed', 'failed', 'refunded'],
+        default: 'pending'
+    },
+    frequency: {
+        type: String,
+        required: true,
+        enum: ['one-time', 'monthly']
+    },
+    donationType: {
+        type: String,
+        required: true,
+        // The value 'Other' has been added to this list
+        enum: ['General Donation', 'Project Specific', 'Emergency Relief', 'Education Purpose', 'Flood Relief', 'Other']
+    },
+    honorOf: {
+        type: String,
+        trim: true
+    },
+    transactionId: {
+        type: String, // To store transaction IDs from payment gateways
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    },
+    updatedAt: {
+        type: Date,
+        default: Date.now
+    }
 });
-
-// Optional: Add index for faster queries
-donationSchema.index({ userId: 1, campaignId: 1 });
 
 module.exports = mongoose.model('Donation', donationSchema);
