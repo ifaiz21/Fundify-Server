@@ -25,6 +25,20 @@ exports.getAllUsers = async (req, res) => {
     }
 };
 
+// --- ADD THIS FUNCTION ---
+exports.getMyProfile = async (req, res) => {
+    try {
+        // The authMiddleware already decoded the token and attached the user ID to req.user
+        const user = await User.findById(req.user.id).select('-password'); // Find user but exclude password
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        res.status(200).json({ success: true, user });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
 // Get user profile
 exports.getProfile = async (req, res) => {
     try {

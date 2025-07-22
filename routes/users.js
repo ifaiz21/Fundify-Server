@@ -384,5 +384,7 @@ router.post("/chatbot", (req, res) => {
       });
     });
 });
+// --- ADD THIS ROUTE ---
+router.get('/me', authMiddleware(), userController.getMyProfile);
 
 module.exports = router;
