@@ -7,16 +7,13 @@ const mongoose = require('mongoose');
 // --- THIS FUNCTION HAS BEEN REPLACED ---
 // Create a new donation and update the campaign atomically after successful payment
 exports.createDonation = async (req, res) => {
-    // Start a new database session for the transaction
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-        // Data comes from the frontend after successful Stripe payment
         const { amount, frequency, donationType, campaignId, paymentInfo } = req.body;
-        const userId = req.user.id; // From authMiddleware
+        const userId = req.user.id;
 
-        // Step 1: Find the campaign that is being donated to
         const campaign = await Campaign.findById(campaignId).session(session);
         if (!campaign) {
             await session.abortTransaction();
@@ -24,32 +21,28 @@ exports.createDonation = async (req, res) => {
             return res.status(404).json({ message: "Campaign not found" });
         }
 
-        // Step 2: Create the new donation record with status 'completed'
         const newDonation = new Donation({
             userId,
             campaignId,
             amount: Number(amount),
             frequency,
             donationType,
-            status: 'completed', // Status is now directly set to completed
-            transactionId: paymentInfo.id, // Store the Stripe Payment Intent ID
+            status: 'completed',
+            transactionId: paymentInfo.id,
         });
         await newDonation.save({ session });
 
-        // Step 3: Update the campaign's raised amount and total backers
         campaign.raised = (campaign.raised || 0) + newDonation.amount;
         campaign.totalBackers = (campaign.totalBackers || 0) + 1;
         
         await campaign.save({ session });
 
-        // Step 4: Update the user's contribution stats
         await User.findByIdAndUpdate(
             userId,
             { $inc: { totalDonated: newDonation.amount } },
             { session }
         );
 
-        // If all steps are successful, commit the transaction
         await session.commitTransaction();
         session.endSession();
 
@@ -60,7 +53,6 @@ exports.createDonation = async (req, res) => {
         });
 
     } catch (error) {
-        // If any step fails, abort the entire transaction to prevent inconsistent data
         await session.abortTransaction();
         session.endSession();
         console.error("Donation transaction error:", error);
