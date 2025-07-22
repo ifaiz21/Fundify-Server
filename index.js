@@ -19,6 +19,7 @@ const newsletterRoutes = require('./routes/newsletter'); // Import newsletter ro
 const kycRoutes = require('./routes/kycRoutes'); // Import KYC routes
 const mongoURI = process.env.MONGO_URI; // <--- This must match EXACTLY!
 const paymentRoute = require('./routes/paymentRoute');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 dns.setDefaultResultOrder('ipv4first');
 
@@ -68,6 +69,7 @@ app.use('/api/campaigns-updates', campaignUpdatesRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/kyc', kycRoutes);
 app.use("/api/payment", paymentRoute);
+app.use('/api/notifications', notificationRoutes);
 
 // Catch-all for undefined routes
 app.use((req, res, next) => {
