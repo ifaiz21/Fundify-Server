@@ -2,6 +2,7 @@
 const Donation = require('../models/Donation');
 const Campaign = require('../models/Campaign');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 const mongoose = require('mongoose');
 
 // --- THIS FUNCTION HAS BEEN REPLACED ---
@@ -42,6 +43,18 @@ exports.createDonation = async (req, res) => {
             { $inc: { totalDonated: newDonation.amount } },
             { session }
         );
+
+        // --- NOTIFICATION LOGIC FOR CAMPAIGN OWNER START ---
+        // Campaign owner ko notification bhejein
+        // Yeh check zaroori hai taake user khud apni campaign par donate karte waqt apne aap ko notification na bheje
+        if (campaign.creator.toString() !== userId.toString()) {
+            await new Notification({
+                userId: campaign.creator, // Campaign ke owner ki ID
+                message: `You received a new donation of PKR ${newDonation.amount.toLocaleString()} on your campaign '${campaign.title}'.`,
+                link: `/ProjectView?id=${campaign._id}`
+            }).save({ session });
+        }
+        // --- NOTIFICATION LOGIC FOR CAMPAIGN OWNER END ---
 
         await session.commitTransaction();
         session.endSession();
