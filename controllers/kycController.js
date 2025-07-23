@@ -71,7 +71,7 @@ const approveKYCApplication = async (req, res) => {
         await new Notification({
             userId: userId,
             message: "Congratulations! Your KYC application has been approved.",
-            link: '/user-profile'
+            link: '/'
         }).save();
         // --- NOTIFICATION LOGIC END ---
 
@@ -115,7 +115,7 @@ const rejectKYCApplication = async (req, res) => {
         await new Notification({
             userId: userId,
             message: `Your KYC application was rejected. Reason: ${adminComments.trim()}`,
-            link: '/user-profile'
+            link: '/'
         }).save();
         // --- NOTIFICATION LOGIC END ---
 
@@ -205,7 +205,7 @@ const submitKYCApplication = async (req, res) => {
         await new Notification({
             userId: userId,
             message: "Your KYC application has been submitted and is now under review.",
-            link: '/user-profile'
+            link: '/'
         }).save();
         // --- NOTIFICATION LOGIC END ---
         

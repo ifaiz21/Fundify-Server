@@ -1,6 +1,7 @@
 // server/controllers/campaignController.js
 const Campaign = require('../models/Campaign');
-//const User = require('../models/User'); // Ensure User model is required
+const User = require('../models/User'); // Ensure User model is required
+const Notification = require('../models/Notification');
 
 // Helper function to calculate overall campaign statistics
 const calculateCampaignStats = async () => {
@@ -17,6 +18,15 @@ exports.createCampaign = async (req, res) => {
     try {
         const campaign = new Campaign(req.body);
         await campaign.save();
+        
+         // --- NOTIFICATION LOGIC START ---
+        await new Notification({
+            userId: req.user.id,
+            message: `Your campaign '${Campaign.title}' has been submitted and is now under review.`,
+            link: `/ProjectView?id=${Campaign._id}` // Campaign page ka link
+        }).save();
+        // --- NOTIFICATION LOGIC END ---
+
         res.status(201).json(campaign);
     } catch (err) {
         console.error('Create campaign error:', err); // Added error logging
@@ -103,18 +113,20 @@ exports.approveCampaign = async (req, res) => {
         if (!campaign) {
             return res.status(404).json({ message: 'Campaign not found' });
         }
-
-        // It's good to check the status, but if the update directly sets it,
-        // this check might be redundant if the frontend ensures it only acts on 'Pending Review'.
-        // Keeping it for robust backend validation.
         if (campaign.status !== 'Pending Review') {
-             // You might want to return a different message here if already Approved/Rejected
-            return res.status(400).json({ message: 'Campaign is not in Pending Review status or already processed.' });
+            return res.status(400).json({ message: 'Campaign is not in Pending Review status.' });
         }
-
         campaign.status = 'Approved';
         campaign.updatedAt = Date.now();
         await campaign.save();
+
+        // --- NOTIFICATION LOGIC START ---
+        await new Notification({
+            userId: campaign.creator, // Campaign banane wale user ko notification bhejें
+            message: `Congratulations! Your campaign '${campaign.title}' has been approved.`,
+            link: `/ProjectView?id=${campaign._id}`
+        }).save();
+        // --- NOTIFICATION LOGIC END ---
 
         res.status(200).json({ message: 'Campaign approved successfully', campaign });
     } catch (err) {
@@ -130,14 +142,20 @@ exports.rejectCampaign = async (req, res) => {
         if (!campaign) {
             return res.status(404).json({ message: 'Campaign not found' });
         }
-
         if (campaign.status !== 'Pending Review') {
-            return res.status(400).json({ message: 'Campaign is not in Pending Review status or already processed.' });
+            return res.status(400).json({ message: 'Campaign is not in Pending Review status.' });
         }
-
         campaign.status = 'Rejected';
         campaign.updatedAt = Date.now();
         await campaign.save();
+
+        // --- NOTIFICATION LOGIC START ---
+        await new Notification({
+            userId: campaign.creator, // Campaign banane wale user ko notification bhejें
+            message: `Your campaign '${campaign.title}' has been rejected. Please review and resubmit if necessary.`,
+            link: `/ProjectView?id=${campaign._id}`
+        }).save();
+        // --- NOTIFICATION LOGIC END ---
 
         res.status(200).json({ message: 'Campaign rejected successfully', campaign });
     } catch (err) {
