@@ -37,7 +37,7 @@ exports.createCampaign = async (req, res) => {
 // Get campaign by ID (used in previews and updates)
 exports.getCampaignById = async (req, res) => {
     try {
-        const campaign = await Campaign.findById(req.params.id);
+        const campaign = await Campaign.findById(req.params.id).populate('creator', 'name');
         if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
         res.json(campaign);
     } catch (err) {
