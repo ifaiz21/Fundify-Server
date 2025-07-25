@@ -19,11 +19,9 @@ const transporter = nodemailer.createTransport({
 const generateCode = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 // --- Google OAuth2Client Initialization ---
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID; // Loaded from .env
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID; 
 const client = new OAuth2Client(GOOGLE_CLIENT_ID);
-
-// Define your JWT secret (use a strong, random string from environment variables)
-const APP_JWT_SECRET = process.env.JWT_SECRET; // Loaded from .env
+const APP_JWT_SECRET = process.env.JWT_SECRET; 
 
 // =======================================================
 //                   STANDARD ROUTES
@@ -204,96 +202,59 @@ router.post('/google-login', async (req, res) => {
   }
 
   try {
-    console.log('GOOGLE_LOGIN_STEP: Verifying Google ID Token...');
-    const ticket = await client.verifyIdToken({
-      idToken: googleIdToken,
-      audience: GOOGLE_CLIENT_ID,
-    });
-
-    const payload = ticket.getPayload();
-    const googleId = payload['sub'];
-    const email = payload['email'];
-    const displayName = payload['name'];
-    const photoURL = payload['picture'];
-
-    console.log('GOOGLE_LOGIN_STEP: Google ID Token verified. Payload:', payload);
-
-    // 2. Check if user exists in MongoDB based on Google ID or email
-    let user = await User.findOne({ $or: [{ googleId: googleId }, { email: email }] });
-
-    if (!user) {
-      console.log(`GOOGLE_LOGIN_STEP: No existing user found for email: ${email}. Returning "User not found".`);
-      // For login endpoint, if no account is found, tell them to sign up.
-      return res.status(404).json({ message: 'No account found with this Google email. Please sign up first.' });
-    } else {
-      console.log(`GOOGLE_LOGIN_STEP: Existing user found: ${user.email}.`);
-
-      // Update user details if they logged in via Google (e.g., linked existing email account)
-      user.googleId = googleId; // Link Google ID
-      user.email = email || user.email; // Ensure email is up-to-date
-      user.displayName = displayName || user.displayName || user.name;
-      user.name = user.name || displayName;
-      user.photoURL = photoURL || user.photoURL;
-      user.registrationMethod = 'google'; // Mark as Google-linked
-      user.lastLogin = new Date();
-
-      await user.save();
-      console.log('GOOGLE_LOGIN_STEP: User details updated. Now checking verification status.');
-
-      // CRITICAL CHECK: Enforce your app's verification for login
-      if (!user.verified) {
-        console.log(`GOOGLE_LOGIN_STEP: User ${user.email} is NOT verified. Denying login.`);
-        // Re-send verification code if they exist but are not verified.
-        const newCode = generateCode();
-        user.verificationCode = newCode;
-        await user.save();
-        await transporter.sendMail({
-          from: process.env.EMAIL_USER,
-          to: user.email,
-          subject: 'Please Verify Your Email to Log In',
-          html: `<p>Hello ${user.name},</p><p>Your email is not yet verified. Here is your verification code:</p><h2>${newCode}</h2><p>Please enter this code in the app to complete your login.</p>`
+        const ticket = await client.verifyIdToken({
+            idToken: googleIdToken,
+            audience: GOOGLE_CLIENT_ID,
         });
 
-        return res.status(401).json({
-          message: 'Email not verified. A new verification code has been sent. Please verify your email to log in.',
-          email: user.email // Send email back for frontend redirection to verification page
-        });
-      }
+        const payload = ticket.getPayload();
+        const { email, name, picture } = payload;
 
-      console.log('GOOGLE_LOGIN_STEP: User is verified. Generating JWT.');
-      // If user is verified, generate your own JWT for the frontend
-      const token = jwt.sign(
-        { id: user._id, role: user.role, email: user.email, googleId: user.googleId },
-        APP_JWT_SECRET,
-        { expiresIn: '1d' }
-      );
+        let user = await User.findOne({ email });
 
-      console.log('GOOGLE_LOGIN_STEP: JWT generated successfully. Sending response.');
-      res.status(200).json({
-        message: 'Google login successful',
-        token: token,
-        user: {
-          id: user._id,
-          name: user.displayName || user.name,
-          email: user.email,
-          role: user.role,
-          profilePictureUrl: user.photoURL
+        if (!user) {
+            // Agar user nahin hai, to naya user banayein
+            user = new User({
+                name,
+                email,
+                profilePictureUrl: picture, // <-- Change: 'photoURL' ki jagah 'profilePictureUrl'
+                registrationMethod: 'google',
+                verified: true, // Google se aane wale users ko verified maanein
+            });
+            await user.save();
+        } else {
+            // Agar user pehle se hai, to uski picture update karein (agar zaroori ho)
+            if (!user.profilePictureUrl) {
+                user.profilePictureUrl = picture; // <-- Change: 'photoURL' ki jagah 'profilePictureUrl'
+            }
+            user.registrationMethod = 'google';
+            await user.save();
         }
-      });
-    }
 
-  } catch (error) {
-    console.error('GOOGLE_LOGIN_ERROR: An unexpected error occurred during Google Login:', error);
-    if (error.code === 'ERR_OAUTH_TOKEN_VERIFICATION_FAILED' || error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ message: 'Authentication failed: Invalid or expired Google ID token.' });
+        const token = jwt.sign(
+            { id: user._id, role: user.role },
+            APP_JWT_SECRET,
+            { expiresIn: '1d' }
+        );
+
+        res.status(200).json({
+            message: 'Google login successful',
+            token: token,
+            role: user.role, // role bhi response mein bhejein
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                kycStatus: user.kycStatus,
+                profilePictureUrl: user.profilePictureUrl // <-- Change: Ab yeh field database se aayegi
+            }
+        });
+
+    } catch (error) {
+        console.error('GOOGLE_LOGIN_ERROR:', error);
+        res.status(500).json({ message: 'Internal server error during Google login.' });
     }
-    if (error.name === 'ValidationError') {
-      console.error('GOOGLE_LOGIN_ERROR: Mongoose Validation Error:', error.message);
-      const errors = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({ message: `Validation failed: ${errors.join(', ')}` });
-    }
-    res.status(500).json({ message: 'Internal server error during Google login.', details: error.message });
-  }
 });
 
 // =======================================================
