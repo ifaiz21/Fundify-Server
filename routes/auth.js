@@ -180,6 +180,7 @@ router.post('/login', async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        kycStatus: user.kycStatus,
         profilePictureUrl: user.profilePictureUrl || null
       }
     });
