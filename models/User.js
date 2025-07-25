@@ -15,6 +15,8 @@ const userSchema = new mongoose.Schema({
   role: { type: String, default: 'user' },
   verified: { type: Boolean, default: false },
   verificationCode: { type: String },
+  profilePictureUrl: { type: String },
+  isGoogleUser: { type: Boolean, default: false },
 
   // --- New fields for Google Sign-in ---
   googleId: { type: String, unique: true, sparse: true },
