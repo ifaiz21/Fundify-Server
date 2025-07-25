@@ -158,23 +158,39 @@ exports.removeProfilePicture = async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
         if (!user) {
-            return sendErrorResponse(res, 404, 'User not found');
+            return res.status(404).json({ message: 'User not found' });
         }
 
-        // Delete the actual file if it's not the default and exists
-        if (user.profilePictureUrl && user.profilePictureUrl !== '/Images/default-avatar.png') {
-            const filePath = path.join(__dirname, '../..', user.profilePictureUrl);
-            fs.unlink(filePath, (err) => {
-                if (err) console.error('Error deleting file:', filePath, err);
-            });
+        // Agar profile picture hai to usse delete karein
+        if (user.profilePictureUrl) {
+            // Sahi file path banayein jo 'public' folder ko target kare
+            const filePath = path.join(__dirname, '..', 'public', user.profilePictureUrl);
+            
+            // Check karein ke file server par mojood hai ya nahin
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath); // Sync istemal karein taake code intezar kare
+            }
         }
 
-        user.profilePictureUrl = null; // Set to null or a default image path
+        // Database se URL ko null set karein
+        user.profilePictureUrl = null;
         await user.save();
-        res.json({ message: 'Profile picture removed successfully', user }); // Return user object
-    } catch (err) {
-        console.error('Remove profile picture error:', err);
-        sendErrorResponse(res, 500, 'Server error');
+
+        res.status(200).json({
+            success: true,
+            message: 'Profile picture removed successfully.',
+            user: { // Frontend ke liye saaf user object wapis bhejein
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                kycStatus: user.kycStatus,
+                profilePictureUrl: user.profilePictureUrl
+            }
+        });
+    } catch (error) {
+        console.error("Remove profile picture error:", error);
+        res.status(500).json({ message: 'Server error while removing profile picture.' });
     }
 };
 

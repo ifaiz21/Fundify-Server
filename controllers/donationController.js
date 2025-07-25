@@ -182,3 +182,24 @@ exports.getRecentDonationsForCampaign = async (req, res) => {
         res.status(500).json({ message: 'Failed to retrieve recent donations', error: err.message });
     }
 };
+// Get all donations for the currently authenticated user
+exports.getMyDonations = async (req, res) => {
+    try {
+        const userId = req.user.id; // User ID auth middleware se aayegi
+
+        const donations = await Donation.find({ userId: userId })
+            .populate({
+                path: 'campaignId',
+                select: 'title mediaUrls' // Campaign se sirf title aur mediaUrls lein
+            })
+            .sort({ createdAt: -1 }); // Sabse nayi donation sabse upar
+
+        res.status(200).json({
+            success: true,
+            donations,
+        });
+    } catch (error) {
+        console.error("Error fetching user's donations:", error);
+        res.status(500).json({ message: "Failed to retrieve your donations.", error: error.message });
+    }
+};
