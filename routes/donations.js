@@ -20,7 +20,7 @@ router.get('/', authMiddleware(), donationController.getAllDonations);
 router.get('/campaign/:campaignId/recent', donationController.getRecentDonationsForCampaign);
 
 // GET /api/donations/my-history - Logged-in user ki saari donations fetch karna
-router.get('/my-history', authMiddleware(), donationsController.getMyDonations);
+router.get('/my-history', authMiddleware(), donationController.getMyDonations);
 
 
 module.exports = router;
