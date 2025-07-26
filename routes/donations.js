@@ -7,6 +7,9 @@ const authMiddleware = require('../middleware/auth');
 // POST /api/donations - Create a new donation
 router.post('/', authMiddleware(), donationController.createDonation);
 
+// GET /api/donations/my-history - Logged-in user ki saari donations fetch karna
+router.get('/my-history', authMiddleware(), donationController.getMyDonations);
+
 // GET /api/donations/:id - Get a specific donation by ID
 router.get('/:id', authMiddleware(), donationController.getDonationById);
 
@@ -18,9 +21,5 @@ router.get('/', authMiddleware(), donationController.getAllDonations);
 
 // NEW: GET /api/donations/campaign/:campaignId/recent - Get recent donations for a specific campaign
 router.get('/campaign/:campaignId/recent', donationController.getRecentDonationsForCampaign);
-
-// GET /api/donations/my-history - Logged-in user ki saari donations fetch karna
-router.get('/my-history', authMiddleware(), donationController.getMyDonations);
-
 
 module.exports = router;
