@@ -1,6 +1,8 @@
-const ContactUs = require('../models/Contactus');
-const Notification = require('../models/Notification'); 
-const jwt = require('jsonwebtoken'); 
+// controllers/contactController.js
+
+const ContactUs = require('../models/Contactus'); 
+const Notification = require('../models/Notification');
+const jwt = require('jsonwebtoken');
 
 exports.submitContactForm = async (req, res) => {
     try {
@@ -14,28 +16,28 @@ exports.submitContactForm = async (req, res) => {
         await newSubmission.save();
 
         // --- NOTIFICATION LOGIC START ---
-        const token = req.headers.authorization?.split(" ")[1];
-        if (token) {
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            const token = authHeader.split(" ")[1];
             try {
-                // Token se user ID nikalein
                 const decoded = jwt.verify(token, process.env.JWT_SECRET);
-                const userId = decoded.id;
+                const userId = decoded.id; 
                 
-                await new Notification({
-                    userId: userId,
-                    message: "Your contact request has been received. We will respond within 1-2 working days.",
-                }).save();
+                const newNotification = new Notification({
+                    user: userId, 
+                    message: "Your request has been recieved. Our team will respond you in 2-3 days. Thanks!",
+                });
+                await newNotification.save();
 
             } catch (err) {
-                console.log("Could not send notification to user: Invalid token or user not logged in.");
+                console.log("Could not send notification (Invalid Token):", err.message);
             }
         }
-        // --- NOTIFICATION LOGIC END ---
 
-        res.status(201).json({ message: 'Your message has been received successfully!' });
+        res.status(201).json({ message: 'Your message has been sent successfully!' });
 
     } catch (err) {
         console.error('Contact form submission error:', err);
-        res.status(500).json({ message: 'Failed to submit message', error: err.message });
+        res.status(500).json({ message: 'Server error, message can not be submit.', error: err.message });
     }
 };

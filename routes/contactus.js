@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const Contactus = require('../models/Contactus');
+const { protect } = require('../middleware/auth');
+const { submitContactForm } = require('../controllers/contactusController');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
@@ -12,6 +14,8 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS
   }
 });
+
+router.route('/').post(protect, submitContactForm);
 
 router.post('/', async (req, res) => {
   try {
