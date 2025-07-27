@@ -21,6 +21,7 @@ const getKYCApplications = async (req, res) => {
             query.status = status;
         }
         const kycApplications = await KYCApplication.find(query)
+            .select('+documentImages +livenessImage')
             .populate('userId', 'name email')
             .sort({ createdAt: -1 });
 
