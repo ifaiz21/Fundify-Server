@@ -169,6 +169,18 @@ const submitKYCApplication = async (req, res) => {
         sendErrorResponse(res, 500, 'Server error during KYC submission.', error);
     }
 };
+const getMyKYCApplication = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const kycApplication = await KYCApplication.findOne({ userId: userId });
+        if (!kycApplication) {
+            return res.status(200).json({ message: 'No KYC application submitted yet.', kycApplication: null });
+        }
+        res.status(200).json({ message: 'KYC application found.', kycApplication });
+    } catch (error) {
+        sendErrorResponse(res, 500, 'Failed to retrieve user\'s KYC application.', error);
+    }
+};
 
 // Function to delete a KYC application
 const deleteKYCApplication = async (req, res) => {
