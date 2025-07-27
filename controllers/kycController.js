@@ -107,16 +107,43 @@ const submitKYCApplication = async (req, res) => {
             return res.status(400).json({ message: 'Please provide all required information and documents.' });
         }
 
-        // 1. Model ka naam 'KYCApplication' aur field ka naam 'userId' istemal karein
+        // User ki purani application dhoondein
         const existingKyc = await KYCApplication.findOne({ userId: req.user.id });
-        if (existingKyc) {
-            return res.status(400).json({ message: 'You have already submitted a KYC request.' });
-        }
 
+        if (existingKyc) {
+            // Agar pehle se pending ya approved hai, to block karein
+            if (existingKyc.status === 'Pending Review' || existingKyc.status === 'Approved') {
+                return res.status(400).json({ message: 'You already have an active or approved KYC request.' });
+            }
+
+            // Agar rejected hai, to usay naye data se update karein
+            if (existingKyc.status === 'Rejected') {
+                const documentPaths = kycDocuments.map(file => file.path);
+                const livenessImagePath = livenessImage.path;
+
+                existingKyc.fullName = fullName;
+                existingKyc.dateOfBirth = dateOfBirth;
+                existingKyc.address = address;
+                existingKyc.documentType = documentType;
+                existingKyc.documentNumber = documentNumber;
+                existingKyc.email = email;
+                existingKyc.phoneNumber = phoneNumber;
+                existingKyc.documentImages = documentPaths;
+                existingKyc.livenessImage = livenessImagePath;
+                existingKyc.status = 'Pending Review'; // Status wapas pending karein
+                existingKyc.adminComments = ''; // Purane comments saaf karein
+
+                await existingKyc.save();
+                await User.findByIdAndUpdate(req.user.id, { kycStatus: 'Pending Review' });
+                
+                return res.status(200).json({ message: 'Your KYC application has been resubmitted for review.' });
+            }
+        }
+        
+        // Agar koi purani application nahi hai, to nayi banayein
         const documentPaths = kycDocuments.map(file => file.path);
         const livenessImagePath = livenessImage.path;
 
-        // 2. Yahan bhi 'KYCApplication' aur 'userId' istemal karein
         const newKyc = new KYCApplication({
             userId: req.user.id,
             fullName,
@@ -134,11 +161,12 @@ const submitKYCApplication = async (req, res) => {
 
         await User.findByIdAndUpdate(req.user.id, { kycStatus: 'Pending Review' });
         res.status(201).json({ message: 'KYC application submitted successfully. It is now under review.' });
+
     } catch (error) {
-        // Error ke liye helper function istemal karein
         sendErrorResponse(res, 500, 'Server error during KYC submission.', error);
     }
 };
+
 
 // Function to get authenticated user's own KYC application details
 const getMyKYCApplication = async (req, res) => {
