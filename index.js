@@ -21,6 +21,7 @@ const mongoURI = process.env.MONGO_URI; // <--- This must match EXACTLY!
 const paymentRoute = require('./routes/paymentRoute');
 const notificationRoutes = require('./routes/notificationRoutes');
 
+
 dns.setDefaultResultOrder('ipv4first');
 
 const app = express();
@@ -70,7 +71,15 @@ app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/kyc', kycRoutes);
 app.use("/api/payment", paymentRoute);
 app.use('/api/notifications', notificationRoutes);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// KYC uploads ke liye directory banayein agar mojood nahi hai
+const kycUploadDir = path.join(__dirname, 'uploads', 'kyc');
+if (!fs.existsSync(kycUploadDir)) {
+    // recursive: true is liye taake agar 'uploads' folder bhi na ho to woh bhi ban jaye
+    fs.mkdirSync(kycUploadDir, { recursive: true });
+    console.log(`Created directory: ${kycUploadDir}`);
+};
 // Catch-all for undefined routes
 app.use((req, res, next) => {
   res.status(404).json({ message: 'API Route not found' });
