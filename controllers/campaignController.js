@@ -2,6 +2,7 @@
 const Campaign = require('../models/Campaign');
 const User = require('../models/User'); // Ensure User model is required
 const Notification = require('../models/Notification');
+const { nanoid } = require('nanoid');
 
 // Helper function to calculate overall campaign statistics
 const calculateCampaignStats = async () => {
@@ -16,21 +17,67 @@ const calculateCampaignStats = async () => {
 // Create a new campaign (for CampaignCreation01 - 03)
 exports.createCampaign = async (req, res) => {
     try {
-        const campaign = new Campaign(req.body);
-        await campaign.save();
-        
-         // --- NOTIFICATION LOGIC START ---
+        // 1. Destructure all fields from the request body
+        const { 
+            name, 
+            location, 
+            category, 
+            goalAmount, 
+            duration, // FIX: duration ab yahan hai
+            isAdultContent, 
+            isIDVerifiedRequired, 
+            isProjectVerifiedRequired, 
+            title, 
+            description, 
+            content // Frontend se 'storyContent' as 'content' aa raha hai
+        } = req.body;
+
+        // 2. Basic validation
+        if (!name || !location || !category || !goalAmount || !title || !description || !content || !duration) {
+            return res.status(400).json({ message: 'Missing required campaign fields.' });
+        }
+
+        // 3. Prepare media URLs from uploaded files
+        const mediaUrls = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
+
+        // 4. Create a new campaign instance
+        const newCampaign = new Campaign({
+            creator: req.user.id,
+            campaignId: nanoid(10), // Unique ID generate karein
+            name,
+            location,
+            category,
+            goalAmount: Number(goalAmount),
+            duration: Number(duration), // FIX: duration yahan set ho raha hai
+            isAdultContent: isAdultContent === 'true',
+            isIDVerifiedRequired: isIDVerifiedRequired === 'true',
+            isProjectVerifiedRequired: isProjectVerifiedRequired === 'true',
+            title,
+            description,
+            mediaUrls: mediaUrls, // Schema ke mutabiq field ka naam
+            story: content,       // Schema ke mutabiq field ka naam
+            status: 'Pending Review',
+        });
+
+        // 5. Save the campaign
+        await newCampaign.save();
+
+        // 6. Update user's createdCampaigns count
+        await User.findByIdAndUpdate(req.user.id, { $inc: { createdCampaigns: 1 } });
+
+        // 7. Create notification
         await new Notification({
             userId: req.user.id,
-            message: `Your campaign '${Campaign.title}' has been submitted and is now under review.`,
-            link: `/ProjectView?id=${Campaign._id}` // Campaign page ka link
+            message: `Your campaign '${newCampaign.title}' has been submitted and is now under review.`,
+            link: `/ProjectView?id=${newCampaign._id}`
         }).save();
-        // --- NOTIFICATION LOGIC END ---
 
-        res.status(201).json(campaign);
+        // 8. Send success response
+        res.status(201).json({ message: 'Campaign created successfully', campaign: newCampaign });
+
     } catch (err) {
-        console.error('Create campaign error:', err); // Added error logging
-        res.status(400).json({ error: err.message });
+        console.error('Create campaign error:', err);
+        res.status(500).json({ message: 'Failed to create campaign', error: err.message, details: err.errors });
     }
 };
 

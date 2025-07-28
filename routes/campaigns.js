@@ -55,62 +55,7 @@ const authorizeCampaign = async (req, res, next) => {
 };
 
 // POST /api/campaigns - Create a new campaign with file uploads
-router.post('/', authMiddleware(), (req, res) => {
-  upload(req, res, async (err) => {
-    if (err instanceof multer.MulterError) {
-      return res.status(400).json({ message: 'Multer error during file upload', error: err.message });
-    } else if (err) {
-      return res.status(500).json({ message: 'File upload failed', error: err.message });
-    }
-
-    try {
-      const { name, location, category, goalAmount, isAdultContent, isIDVerifiedRequired, isProjectVerifiedRequired, title, description, content } = req.body;
-
-      // Basic validation for required fields
-      if (!name || !location || !category || !goalAmount || !title || !description || !content) {
-          return res.status(400).json({ message: 'Missing required campaign fields.' });
-      }
-
-      // Construct mediaUrls array from uploaded files
-      const mediaUrls = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
-
-      const newCampaignId = nanoid(10); // Generate a unique campaign ID
-
-      const newCampaign = new Campaign({
-        creator: req.user.id, // Corrected to use 'creator' field
-        campaignId: newCampaignId, // Ensure this unique ID is set
-        name,
-        location,
-        category,
-        goalAmount: Number(goalAmount), // Ensure it's a number
-        duration,
-        isAdultContent: isAdultContent === 'true', // Convert string to boolean
-        isIDVerifiedRequired: isIDVerifiedRequired === 'true', // Convert string to boolean
-        isProjectVerifiedRequired: isProjectVerifiedRequired === 'true', // Convert string to boolean
-        title,
-        description,
-        mediaUrls: mediaUrls,
-        story: content,
-        status: 'Pending Review', // Default status for new submissions
-      });
-
-      await newCampaign.save(); // Save the new campaign to the database
-
-      // Update user's createdCampaigns count
-      await User.findByIdAndUpdate(
-        req.user.id,
-        { $inc: { createdCampaigns: 1 } },
-        { new: true }
-      );
-
-      res.status(201).json({ message: 'Campaign created successfully', campaign: newCampaign });
-    } catch (err) {
-      console.error('Create campaign error:', err);
-      // More detailed error response for debugging
-      res.status(500).json({ message: 'Failed to create campaign', error: err.message, details: err.errors });
-    }
-  });
-});
+router.post('/', authMiddleware(), upload, campaignController.createCampaign);
 
 // GET /api/campaigns - Get all campaigns with optional status filtering (for public view or admin all campaigns)
 router.get('/', campaignController.getAllCampaigns); // NO AUTH MIDDLEWARE, this is for public access
