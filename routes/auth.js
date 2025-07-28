@@ -624,5 +624,21 @@ router.post('/set-password', async (req, res) => {
   }
 });
 
+router.get('/profile', authMiddleware, async (req, res) => {
+  try {
+    // authMiddleware token se user ki ID nikal kar req.user.id mein daal dega
+    const user = await User.findById(req.user.id).select('-password'); // Password ke ilawa sab data bhejें
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user); // User ka poora data wapas bhej dein
+  } catch (err) {
+    console.error("Profile fetch error:", err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
 
 module.exports = router;
