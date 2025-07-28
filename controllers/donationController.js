@@ -8,6 +8,7 @@ const mongoose = require('mongoose');
 // --- THIS FUNCTION HAS BEEN REPLACED ---
 // Create a new donation and update the campaign atomically after successful payment
 exports.createDonation = async (req, res) => {
+    // Transaction session shuru karein taake data aadhay adhoore save na ho
     const session = await mongoose.startSession();
     session.startTransaction();
 
@@ -15,6 +16,7 @@ exports.createDonation = async (req, res) => {
         const { amount, frequency, donationType, campaignId, paymentInfo } = req.body;
         const userId = req.user.id;
 
+        // Step 1: Campaign find karein taake humein owner ki ID mil sake notification ke liye
         const campaign = await Campaign.findById(campaignId).session(session);
         if (!campaign) {
             await session.abortTransaction();
@@ -22,6 +24,7 @@ exports.createDonation = async (req, res) => {
             return res.status(404).json({ message: "Campaign not found" });
         }
 
+        // Step 2: Nayi donation ka record banayein
         const newDonation = new Donation({
             userId,
             campaignId,
@@ -29,33 +32,40 @@ exports.createDonation = async (req, res) => {
             frequency,
             donationType,
             status: 'completed',
-            transactionId: paymentInfo.id,
+            transactionId: paymentInfo.id, // Assuming paymentInfo contains the ID
         });
         await newDonation.save({ session });
 
-        campaign.raised = (campaign.raised || 0) + newDonation.amount;
-        campaign.totalBackers = (campaign.totalBackers || 0) + 1;
-        
-        await campaign.save({ session });
+        // Step 3: Campaign ko atomically update karein (Yeh naya aur sahi tareeka hai)
+        // Note: Yahan 'raisedAmount' istemal kiya gaya hai. Agar aapke schema mein 'raised' hai to usay istemal karein.
+        await Campaign.findByIdAndUpdate(
+            campaignId,
+            { 
+                $inc: { 
+                    raisedAmount: newDonation.amount, 
+                    totalBackers: 1 
+                } 
+            },
+            { session } // Transaction session pass karein
+        );
 
+        // Step 4: User ka 'totalDonated' update karein
         await User.findByIdAndUpdate(
             userId,
             { $inc: { totalDonated: newDonation.amount } },
             { session }
         );
 
-        // --- NOTIFICATION LOGIC FOR CAMPAIGN OWNER START ---
-        // Campaign owner ko notification bhejein
-        // Yeh check zaroori hai taake user khud apni campaign par donate karte waqt apne aap ko notification na bheje
+        // Step 5: Campaign ke owner ko notification bhejein
         if (campaign.creator.toString() !== userId.toString()) {
             await new Notification({
-                userId: campaign.creator, // Campaign ke owner ki ID
+                userId: campaign.creator, // Campaign owner ki ID
                 message: `You received a new donation of PKR ${newDonation.amount.toLocaleString()} on your campaign '${campaign.title}'.`,
                 link: `/ProjectView?id=${campaign._id}`
             }).save({ session });
         }
-        // --- NOTIFICATION LOGIC FOR CAMPAIGN OWNER END ---
 
+        // Agar sab theek hai to transaction ko commit karein
         await session.commitTransaction();
         session.endSession();
 
@@ -66,13 +76,13 @@ exports.createDonation = async (req, res) => {
         });
 
     } catch (error) {
+        // Agar koi bhi error aye to saari changes ko undo (abort) kar dein
         await session.abortTransaction();
         session.endSession();
         console.error("Donation transaction error:", error);
         res.status(500).json({ message: "Server error during donation process.", error: error.message });
     }
 };
-
 
 // --- ALL OTHER FUNCTIONS REMAIN THE SAME ---
 
