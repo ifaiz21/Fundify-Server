@@ -6,6 +6,7 @@ const campaignSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String, required: true },
   goalAmount: { type: Number, required: true },
+  duration: { type: Number, required: [true, 'Campaign duration in days is required.'],},
   category: { type: String, required: true },
   mediaUrls: [{ type: String }],
   story: { type: String },

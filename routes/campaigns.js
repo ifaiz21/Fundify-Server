@@ -83,6 +83,7 @@ router.post('/', authMiddleware(), (req, res) => {
         location,
         category,
         goalAmount: Number(goalAmount), // Ensure it's a number
+        duration,
         isAdultContent: isAdultContent === 'true', // Convert string to boolean
         isIDVerifiedRequired: isIDVerifiedRequired === 'true', // Convert string to boolean
         isProjectVerifiedRequired: isProjectVerifiedRequired === 'true', // Convert string to boolean
