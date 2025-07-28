@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const nodemailer = require('nodemailer');
 const { OAuth2Client } = require('google-auth-library');
+const authMiddleware = require('../middleware/auth');
 
 // Email transporter setup
 const transporter = nodemailer.createTransport({
