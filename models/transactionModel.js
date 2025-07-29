@@ -1,5 +1,5 @@
 // server/models/transactionModel.js
-const mongoose = require('mongoose');
+const mongoose = require('mongoose'); 
 
 const transactionSchema = new mongoose.Schema({
     // Type of transaction (e.g., 'Withdrawal', 'Deposit', 'Refund', 'Fee')
