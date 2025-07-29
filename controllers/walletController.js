@@ -5,18 +5,34 @@ const Transaction = require('../models/transactionModel'); // Aapko transaction 
 // Wallet ke stats fetch karne ke liye
 exports.getWalletStats = async (req, res) => {
     try {
-        const wallet = await Wallet.findOne({ name: 'platformWallet' });
-        // Yahan aapko transactions bhi fetch karni hongi
+        let wallet = await Wallet.findOne({ name: 'platformWallet' });
+
+        // AGAR WALLET NAHI MILA, TO EK NAYA BANA DO
+        if (!wallet) {
+            console.log("Platform wallet not found, creating a new one...");
+            wallet = new Wallet({
+                name: 'platformWallet',
+                totalBalance: 0,
+                availableFunds: 0,
+                totalWithdrawals: 0,
+                pendingPayouts: 0
+            });
+            await wallet.save();
+        }
+
         const transactions = await Transaction.find().sort({ createdAt: -1 }).limit(20);
 
         res.status(200).json({
+            success: true,
             stats: wallet,
             transactions: transactions
         });
     } catch (error) {
+        console.error("Error in getWalletStats:", error);
         res.status(500).json({ message: "Wallet data fetch karne mein masla hua." });
     }
 };
+
 
 // Funds transfer karne ke liye
 exports.transferFunds = async (req, res) => {
