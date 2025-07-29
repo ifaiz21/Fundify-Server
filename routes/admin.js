@@ -5,6 +5,8 @@ const auth = require('../middleware/auth');
 const userController = require('../controllers/userController'); // User controller import karein
 const campaignController = require('../controllers/campaignController'); // Campaign controller import karein
 const donationController = require('../controllers/donationController'); // Donation controller import karein
+const walletController = require('../controllers/walletController'); // Wallet controller ko import karein
+const authMiddleware = require('../middleware/auth');
 
 // Example admin dashboard route
 router.get('/dashboard', auth(['admin']), (req, res) => {
@@ -31,6 +33,8 @@ router.get('/feedbacks', auth(['admin']), async (req, res) => {
         res.status(500).json({ message: 'Failed to retrieve feedbacks', error: err.message });
     }
 });
+router.get('/wallet', authMiddleware(['admin']), walletController.getWalletStats);
+router.post('/wallet/transfer', authMiddleware(['admin']), walletController.transferFunds);
 
 
 module.exports = router;
