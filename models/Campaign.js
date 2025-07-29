@@ -14,7 +14,7 @@ const campaignSchema = new mongoose.Schema({
   creator: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   status: { type: String, default: 'Draft', enum: ['Draft', 'Pending Review', 'Approved', 'Rejected', 'Active', 'Completed', 'Canceled'] },
   isSubmitted: { type: Boolean, default: false },
-  raised: { type: Number, default: 0 },
+  raisedAmount: { type: Number, default: 0 },
   totalBackers: { type: Number, default: 0 },
   startDate: { type: Date },
   endDate: { type: Date },
