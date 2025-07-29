@@ -181,7 +181,8 @@ exports.approveCampaign = async (req, res) => {
         res.status(500).json({ message: 'Failed to approve campaign', error: err.message });
     }
 };
-exports.activateCampaign = async (req, res) => {
+
+{/*exports.activateCampaign = async (req, res) => {
     try {
         const campaign = await Campaign.findById(req.params.id);
 
@@ -221,7 +222,7 @@ exports.activateCampaign = async (req, res) => {
         console.error('Activate campaign error:', error);
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
-};
+}; */}
 
 // Reject a campaign (Admin action)
 exports.rejectCampaign = async (req, res) => {

@@ -1,9 +1,10 @@
 // server/controllers/donationController.js
+const mongoose = require('mongoose');
 const Donation = require('../models/Donation');
 const Campaign = require('../models/Campaign');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
-const mongoose = require('mongoose');
+const Wallet = require('../models/walletModel'); 
 
 // --- THIS FUNCTION HAS BEEN REPLACED ---
 // Create a new donation and update the campaign atomically after successful payment
@@ -64,10 +65,24 @@ exports.createDonation = async (req, res) => {
                 link: `/ProjectView?id=${campaign._id}`
             }).save({ session });
         }
+        // Step 6: Platform Wallet ko update karein
+        const platformWallet = await Wallet.findOneAndUpdate(
+            { name: 'platformWallet' },
+            { 
+                $inc: { 
+                    totalBalance: newDonation.amount,
+                    availableFunds: newDonation.amount 
+                }
+            },
+            { session, new: true, upsert: true } // session zaroor pass karein
+        );
 
         // Agar sab theek hai to transaction ko commit karein
         await session.commitTransaction();
         session.endSession();
+
+        req.io.emit('walletUpdated', platformWallet); // Wallet update ka event
+        req.io.emit('userActivityUpdated');
 
         res.status(201).json({ 
             success: true, 
