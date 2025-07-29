@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const campaignController = require('../controllers/campaignController');
+const { protect, admin } = require('../middleware/authMiddleware'); // <-- YEH LINE ADD KAREIN
 
 // Create a new campaign
 router.post('/', campaignController.createCampaign);
@@ -19,5 +20,7 @@ router.delete('/:id', campaignController.deleteCampaign);
 
 // Submit a campaign
 router.put('/:id/submit', campaignController.submitCampaign);
+
+router.put('/:id/activate', protect, admin, campaignController.activateCampaign);
 
 module.exports = router;

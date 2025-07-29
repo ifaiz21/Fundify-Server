@@ -181,6 +181,47 @@ exports.approveCampaign = async (req, res) => {
         res.status(500).json({ message: 'Failed to approve campaign', error: err.message });
     }
 };
+exports.activateCampaign = async (req, res) => {
+    try {
+        const campaign = await Campaign.findById(req.params.id);
+
+        if (!campaign) {
+            return res.status(404).json({ message: 'Campaign not found' });
+        }
+        
+        // Check karein ke campaign 'Approved' status mein hai ya nahi
+        if (campaign.status !== 'Approved') {
+            return res.status(400).json({ message: `Campaign can only be activated from 'Approved' status. Current status: ${campaign.status}` });
+        }
+
+        // Logic to activate the campaign
+        campaign.status = 'Active';
+      
+        const startDate = new Date(); // Aaj ki date
+        const durationInDays = campaign.duration;
+      
+        const endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + durationInDays);
+
+        campaign.startDate = startDate;
+        campaign.endDate = endDate;
+
+        const updatedCampaign = await campaign.save();
+
+        // Optional: User ko notification bhejein ke unki campaign live ho gayi hai
+        await new Notification({
+            userId: campaign.creator,
+            message: `Your campaign '${campaign.title}' is now live!`,
+            link: `/ProjectView?id=${campaign._id}`
+        }).save();
+
+        res.status(200).json(updatedCampaign);
+
+    } catch (error) {
+        console.error('Activate campaign error:', error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
 
 // Reject a campaign (Admin action)
 exports.rejectCampaign = async (req, res) => {
