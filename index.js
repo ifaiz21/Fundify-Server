@@ -32,7 +32,7 @@ const PORT = process.env.PORT || 5000;
 // --- CORS Configuration (Bohat Zaroori) ---
 // Yahan apne frontend ka URL daalein. Agar Vercel/Netlify par hai to woh URL.
 const corsOptions = {
-    origin: ["http://localhost:3000", "https://fundify.up.railway.app/"], // <-- APNA FRONTEND URL YAHAN DAALEIN
+    origin: ["http://localhost:3000", "https://fundify.up.railway.app"], // <-- APNA FRONTEND URL YAHAN DAALEIN
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
 };
